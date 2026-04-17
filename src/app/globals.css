@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f1ea;
+  --foreground: #1f2937;
+  --card: rgba(255, 252, 247, 0.74);
+  --card-strong: rgba(255, 252, 247, 0.92);
+  --line-wealth: #cc7b3b;
+  --line-love: #d05d74;
+  --line-career: #4878b7;
+  --line-health: #5a9a72;
+  --ring: rgba(39, 79, 109, 0.18);
+  --shadow: 0 28px 80px rgba(54, 56, 72, 0.12);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(100, 144, 191, 0.2), transparent 28%),
+    radial-gradient(circle at right 20%, rgba(234, 193, 138, 0.22), transparent 24%),
+    linear-gradient(180deg, #f8f5ef 0%, #f2eee6 52%, #ece7df 100%);
+  color: var(--foreground);
+  font-family: var(--font-body), sans-serif;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: auto;
+  pointer-events: none;
+  z-index: -1;
+  filter: blur(16px);
+}
+
+body::before {
+  top: 6rem;
+  left: -4rem;
+  width: 18rem;
+  height: 18rem;
+  background: rgba(120, 161, 201, 0.18);
+}
+
+body::after {
+  right: -6rem;
+  bottom: 5rem;
+  width: 20rem;
+  height: 20rem;
+  background: rgba(205, 124, 80, 0.12);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(72, 120, 183, 0.2);
+}
+
+.glass-panel {
+  background: var(--card);
+  backdrop-filter: blur(24px);
+  box-shadow: var(--shadow);
+}
+
+.chart-fade {
+  animation: chart-enter 600ms ease-out both;
+}
+
+.stagger-rise {
+  animation: rise-in 500ms ease-out both;
+}
+
+@keyframes chart-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
