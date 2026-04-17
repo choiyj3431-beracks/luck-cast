@@ -13,6 +13,12 @@ import {
 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 
+const ONE_LINE_TONE_LABEL: Record<"sharp" | "seductive" | "cool", string> = {
+  sharp: "Sharp",
+  seductive: "Seductive",
+  cool: "Cool",
+};
+
 const PERIOD_TABS: Array<{ value: FortunePeriod; label: string; hint: string }> = [
   { value: "daily", label: "일별", hint: "오늘부터 7일" },
   { value: "monthly", label: "월별", hint: "향후 6개월" },
@@ -67,6 +73,7 @@ export function LuckCastDashboard() {
   const [fortune, setFortune] = useState<FortunePayload | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTone, setSelectedTone] = useState<"sharp" | "seductive" | "cool">("sharp");
 
   async function loadFortune(nextPeriod: FortunePeriod, nextForm = form) {
     setIsLoading(true);
@@ -75,6 +82,7 @@ export function LuckCastDashboard() {
     try {
       const payload = await requestFortune(nextPeriod, nextForm);
       setFortune(payload);
+      setSelectedTone(payload.oneLineVariants[0]?.tone || "sharp");
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : "운세를 불러오지 못했습니다.",
@@ -97,6 +105,7 @@ export function LuckCastDashboard() {
       void requestFortune("daily", defaultForm)
         .then((payload) => {
           setFortune(payload);
+          setSelectedTone(payload.oneLineVariants[0]?.tone || "sharp");
         })
         .catch((requestError: unknown) => {
           setError(
@@ -364,24 +373,57 @@ export function LuckCastDashboard() {
                   </span>
                 </div>
 
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {fortune.oneLineVariants.map((variant) => {
+                    const active = variant.tone === selectedTone;
+
+                    return (
+                      <button
+                        key={variant.tone}
+                        type="button"
+                        onClick={() => setSelectedTone(variant.tone)}
+                        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                          active
+                            ? "border-slate-900 bg-slate-900 text-white"
+                            : "border-slate-200 bg-white/75 text-slate-600 hover:border-slate-400"
+                        }`}
+                      >
+                        {ONE_LINE_TONE_LABEL[variant.tone]}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {fortune.picks.map((item, index) => (
-                    <article
-                      key={item.id}
-                      className="stagger-rise rounded-[26px] border border-white/70 bg-linear-to-br from-white/90 to-rose-50/80 p-5"
-                      style={{ animationDelay: `${index * 80}ms` }}
-                    >
-                      <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
-                        {item.label}
-                      </p>
-                      <h4 className="mt-3 text-2xl font-bold leading-9 text-slate-900">
-                        {item.value}
-                      </h4>
-                      <p className="mt-3 text-sm leading-6 text-slate-600">
-                        {item.description}
-                      </p>
-                    </article>
-                  ))}
+                  {fortune.picks.map((item, index) => {
+                    const selectedVariant = fortune.oneLineVariants.find(
+                      (variant) => variant.tone === selectedTone,
+                    );
+                    const displayValue =
+                      item.id === "one-line" ? selectedVariant?.text || item.value : item.value;
+                    const displayDescription =
+                      item.id === "one-line"
+                        ? `선택된 톤: ${ONE_LINE_TONE_LABEL[selectedTone]}. 공유용 카피로 바로 써도 되는 강도입니다.`
+                        : item.description;
+
+                    return (
+                      <article
+                        key={item.id}
+                        className="stagger-rise rounded-[26px] border border-white/70 bg-linear-to-br from-white/90 to-rose-50/80 p-5"
+                        style={{ animationDelay: `${index * 80}ms` }}
+                      >
+                        <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
+                          {item.label}
+                        </p>
+                        <h4 className="mt-3 text-2xl font-bold leading-9 text-slate-900">
+                          {displayValue}
+                        </h4>
+                        <p className="mt-3 text-sm leading-6 text-slate-600">
+                          {displayDescription}
+                        </p>
+                      </article>
+                    );
+                  })}
                 </div>
               </section>
 

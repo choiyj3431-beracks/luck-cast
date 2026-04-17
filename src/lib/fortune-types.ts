@@ -32,6 +32,11 @@ export type FortunePick = {
   description: string;
 };
 
+export type FortuneOneLineVariant = {
+  tone: "sharp" | "seductive" | "cool";
+  text: string;
+};
+
 export type FortunePayload = {
   period: FortunePeriod;
   headline: string;
@@ -43,6 +48,7 @@ export type FortunePayload = {
   checklist: string[];
   highlights: FortuneInsight[];
   picks: FortunePick[];
+  oneLineVariants: FortuneOneLineVariant[];
   chart: FortunePoint[];
   source: "gemini" | "fallback";
 };
