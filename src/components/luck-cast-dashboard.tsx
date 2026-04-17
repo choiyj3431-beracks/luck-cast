@@ -353,6 +353,38 @@ export function LuckCastDashboard() {
                 </div>
               </section>
 
+              <section className="glass-panel rounded-[32px] border border-white/60 p-6 sm:p-7">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Hot Picks</p>
+                    <h3 className="mt-2 text-2xl font-bold text-slate-900">오늘의 자극 포인트</h3>
+                  </div>
+                  <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
+                    공유하기 좋은 카드
+                  </span>
+                </div>
+
+                <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {fortune.picks.map((item, index) => (
+                    <article
+                      key={item.id}
+                      className="stagger-rise rounded-[26px] border border-white/70 bg-linear-to-br from-white/90 to-rose-50/80 p-5"
+                      style={{ animationDelay: `${index * 80}ms` }}
+                    >
+                      <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
+                        {item.label}
+                      </p>
+                      <h4 className="mt-3 text-2xl font-bold leading-9 text-slate-900">
+                        {item.value}
+                      </h4>
+                      <p className="mt-3 text-sm leading-6 text-slate-600">
+                        {item.description}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
               <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
                 <article className="glass-panel rounded-[32px] border border-white/60 p-6 sm:p-7">
                   <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Narrative</p>

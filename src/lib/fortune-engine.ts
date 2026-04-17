@@ -1,6 +1,7 @@
 import {
   FortuneFormInput,
   FortuneInsight,
+  FortunePick,
   FortunePayload,
   FortunePeriod,
   FortunePoint,
@@ -123,6 +124,92 @@ function buildHighlights(points: FortunePoint[]): FortuneInsight[] {
   });
 }
 
+function bestCategory(points: FortunePoint[]) {
+  const ranked = [...CATEGORY_META]
+    .map(({ key, label }) => ({ key, label, score: averageOf(points, key) }))
+    .sort((a, b) => b.score - a.score);
+
+  return ranked[0];
+}
+
+function buildLuckyNumbers(seed: number) {
+  const numbers = new Set<number>();
+  let step = 0;
+
+  while (numbers.size < 4) {
+    const value = 1 + Math.floor(seededUnit(seed, step, 8) * 45);
+    numbers.add(value);
+    step += 1;
+  }
+
+  return [...numbers].sort((a, b) => a - b).join(", ");
+}
+
+function buildPicks(input: FortuneFormInput, period: FortunePeriod, chart: FortunePoint[]): FortunePick[] {
+  const anchor = chart[0];
+  const top = bestCategory(chart);
+  const seed = hashString(`${input.name}|${period}|${anchor.date}|${top.key}`);
+  const coffeeByMood = [
+    ["드립 커피", "속도를 높이기보다 판단을 또렷하게 가져가는 편이 맞습니다."],
+    ["콜드브루", "감정 소모를 줄이고 집중력만 길게 끌고 가는 흐름입니다."],
+    ["바닐라 라테", "사람을 만나는 자리에 부드러운 첫인상이 더 잘 먹힙니다."],
+    ["에스프레소", "짧고 강한 결정을 내려야 할 때 추진력이 붙습니다."],
+  ] as const;
+  const drinkByMood = [
+    ["하이볼", "길게 늘어지는 자리보다 가볍고 선명한 템포가 어울립니다."],
+    ["레드와인", "관계와 분위기를 천천히 끌어올리는 쪽이 유리합니다."],
+    ["위스키 온더록스", "혼자 생각을 정리하는 밤에 잘 맞는 무드입니다."],
+    ["논알코올 맥주", "오늘은 과열보다 컨디션 보존이 결과를 지킵니다."],
+  ] as const;
+  const oneLiners = {
+    love: "밀어붙이는 날이 아니라, 답장을 끌어내는 날.",
+    wealth: "감으로 지르기보다 타이밍을 잡아먹는 날.",
+    career: "말을 아끼기보다 첫 문장을 선점해야 하는 날.",
+    health: "버티는 힘보다 회복 속도가 성과를 가르는 날.",
+  } as const;
+  const actions = {
+    love: "먼저 한 줄 연락 보내기",
+    wealth: "보류하던 결제 기준 다시 세우기",
+    career: "중요 메시지 오전 안에 발송하기",
+    health: "카페인과 수면 시간 먼저 정리하기",
+  } as const;
+  const coffee = coffeeByMood[seed % coffeeByMood.length];
+  const drink = drinkByMood[(seed + 1) % drinkByMood.length];
+
+  return [
+    {
+      id: "one-line",
+      label: "오늘의 한 줄",
+      value: oneLiners[top.key],
+      description: `${top.label} 흐름이 가장 강하게 올라와 있습니다.`,
+    },
+    {
+      id: "lucky-numbers",
+      label: period === "daily" ? "오늘의 행운 숫자" : "이번 흐름의 행운 숫자",
+      value: buildLuckyNumbers(seed),
+      description: "가벼운 재미 요소로만 보고, 결정은 현실 기준으로 가져가세요.",
+    },
+    {
+      id: "drink",
+      label: period === "daily" ? "오늘의 술" : "이번 흐름의 술",
+      value: drink[0],
+      description: drink[1],
+    },
+    {
+      id: "coffee",
+      label: period === "daily" ? "오늘의 커피" : "이번 흐름의 커피",
+      value: coffee[0],
+      description: coffee[1],
+    },
+    {
+      id: "action",
+      label: "오늘의 액션",
+      value: actions[top.key],
+      description: `${top.label} 점수가 높을 때 가장 바로 체감되는 행동입니다.`,
+    },
+  ];
+}
+
 function periodCopy(period: FortunePeriod) {
   if (period === "daily") {
     return {
@@ -153,6 +240,7 @@ function periodCopy(period: FortunePeriod) {
 function buildFallbackFortune(input: FortuneFormInput, period: FortunePeriod): FortunePayload {
   const chart = buildFallbackChart(input, period);
   const highlights = buildHighlights(chart);
+  const picks = buildPicks(input, period, chart);
   const top = [...highlights].sort((a, b) => b.score - a.score);
   const copy = periodCopy(period);
   const periodLabel = KOREAN_PERIOD_LABEL[period];
@@ -172,6 +260,7 @@ function buildFallbackFortune(input: FortuneFormInput, period: FortunePeriod): F
       "한 번 미뤘던 연락이나 제안을 이번 구간에 재개하기",
     ],
     highlights,
+    picks,
     chart,
     source: "fallback",
   };
@@ -188,6 +277,13 @@ function buildPrompt(input: FortuneFormInput, period: FortunePeriod) {
   return [
     "너는 Luck Cast의 운세 시각화 엔진이다.",
     "사용자에게는 현대적이고 직관적인 조언만 보여주며, 설명은 짧고 선명해야 한다.",
+    "문체는 자극적이되 싸구려처럼 보이면 안 된다.",
+    "한 줄 카피는 사용자가 캡처해서 공유하고 싶을 정도로 강한 문장이어야 한다.",
+    "좋은 예시는 '오늘은 버티는 날이 아니라 선점하는 날', '답장을 기다리는 날이 아니라 반응을 끌어내는 날' 같은 톤이다.",
+    "문장은 예언자처럼 단정하지 말고, 행동을 부추기는 세련된 카피처럼 작성한다.",
+    "picks 항목은 특히 구체적이고 감각적이어야 하며, '오늘의 술', '오늘의 커피', '오늘의 액션'은 바로 떠오르는 장면이 있어야 한다.",
+    "행운 숫자는 로또 당첨 보장처럼 쓰지 말고, 재미 요소라는 뉘앙스를 유지한다.",
+    "summary, actionPoint, caution도 평범한 상담문처럼 늘어놓지 말고 첫 문장부터 긴장감 있게 쓴다.",
     `사용자 이름: ${input.name || "사용자"}`,
     `생년월일: ${input.birthDate}`,
     `출생 시간: ${input.birthTime || "미상"}`,
@@ -203,11 +299,26 @@ function fortuneSchema(pointCount: number) {
   return {
     type: "object",
     properties: {
-      headline: { type: "string" },
-      summary: { type: "string" },
-      actionPoint: { type: "string" },
-      caution: { type: "string" },
-      luckyWindow: { type: "string" },
+      headline: {
+        type: "string",
+        description: "짧고 강한 제목. 사용자가 바로 시선을 멈추게 하는 운세 헤드라인.",
+      },
+      summary: {
+        type: "string",
+        description: "평범한 상담문이 아닌, 첫 문장부터 긴장감 있는 운세 요약.",
+      },
+      actionPoint: {
+        type: "string",
+        description: "지금 당장 행동하고 싶게 만드는 선명한 액션 문장.",
+      },
+      caution: {
+        type: "string",
+        description: "겁주기보다 감각적으로 경고하는 주의 포인트.",
+      },
+      luckyWindow: {
+        type: "string",
+        description: "행동 타이밍이 떠오르게 만드는 짧은 시간 표현.",
+      },
       focusTags: {
         type: "array",
         items: { type: "string" },
@@ -228,6 +339,22 @@ function fortuneSchema(pointCount: number) {
             icon: { type: "string" },
           },
           required: ["id", "label", "score", "note", "icon"],
+        },
+      },
+      picks: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            label: { type: "string" },
+            value: { type: "string" },
+            description: {
+              type: "string",
+              description: "공유 가능한 톤의 짧고 자극적인 설명. 감각적인 장면이 떠올라야 한다.",
+            },
+          },
+          required: ["id", "label", "value", "description"],
         },
       },
       chart: {
@@ -257,6 +384,7 @@ function fortuneSchema(pointCount: number) {
       "focusTags",
       "checklist",
       "highlights",
+      "picks",
       "chart",
     ],
   };
@@ -277,9 +405,18 @@ function normalizePayload(payload: FortunePayload, period: FortunePeriod) {
     period,
     focusTags: payload.focusTags.slice(0, 4),
     checklist: payload.checklist.slice(0, 5),
+    picks: payload.picks?.slice(0, 5) ?? buildPicks(defaultInputForNormalization, period, chart),
     chart,
   };
 }
+
+const defaultInputForNormalization: FortuneFormInput = {
+  name: "사용자",
+  birthDate: "1990-01-01",
+  birthTime: "09:00",
+  calendarType: "solar",
+  gender: "other",
+};
 
 async function requestGeminiFortune(
   input: FortuneFormInput,
@@ -332,7 +469,7 @@ async function requestGeminiFortune(
 
   const parsed = JSON.parse(text) as Omit<FortunePayload, "period" | "source">;
 
-  return normalizePayload(
+  const normalized = normalizePayload(
     {
       ...parsed,
       period,
@@ -340,6 +477,12 @@ async function requestGeminiFortune(
     },
     period,
   );
+
+  if (!normalized.picks.length) {
+    normalized.picks = buildPicks(input, period, normalized.chart);
+  }
+
+  return normalized;
 }
 
 export async function generateFortune(input: FortuneFormInput, period: FortunePeriod) {

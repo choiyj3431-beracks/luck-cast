@@ -25,6 +25,13 @@ export type FortuneInsight = {
   icon: string;
 };
 
+export type FortunePick = {
+  id: string;
+  label: string;
+  value: string;
+  description: string;
+};
+
 export type FortunePayload = {
   period: FortunePeriod;
   headline: string;
@@ -35,6 +42,7 @@ export type FortunePayload = {
   focusTags: string[];
   checklist: string[];
   highlights: FortuneInsight[];
+  picks: FortunePick[];
   chart: FortunePoint[];
   source: "gemini" | "fallback";
 };
