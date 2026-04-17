@@ -37,6 +37,12 @@ export type FortuneOneLineVariant = {
   text: string;
 };
 
+export type FortuneDeepSection = {
+  id: string;
+  title: string;
+  body: string;
+};
+
 export type FortunePayload = {
   period: FortunePeriod;
   headline: string;
@@ -49,6 +55,8 @@ export type FortunePayload = {
   highlights: FortuneInsight[];
   picks: FortunePick[];
   oneLineVariants: FortuneOneLineVariant[];
+  deepReadingIntro: string;
+  deepSections: FortuneDeepSection[];
   chart: FortunePoint[];
   source: "gemini" | "fallback";
 };

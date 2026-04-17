@@ -265,6 +265,58 @@ function buildPicks(
   ];
 }
 
+function buildDeepSections(
+  input: FortuneFormInput,
+  chart: FortunePoint[],
+  luckyNumbers: string,
+) {
+  const top = bestCategory(chart);
+  const topTwo = [...CATEGORY_META]
+    .map(({ key, label }) => ({ key, label, score: averageOf(chart, key) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2);
+  const primary = topTwo[0]?.label ?? "재물";
+  const secondary = topTwo[1]?.label ?? "건강";
+
+  const intro = `${input.name || "사용자"}님의 흐름을 보면 ${primary}과 ${secondary} 쪽 기운이 먼저 반응합니다. 지금은 한 번에 세게 밀기보다, 맞는 생활 리듬과 선택지를 붙여서 운을 끌어올리는 편이 결과가 좋습니다.`;
+
+  return {
+    intro,
+    sections: [
+      {
+        id: "food",
+        title: "음식과 섭생",
+        body: `${primary} 흐름을 살리려면 자극만 강한 선택보다 몸에 바로 남는 루틴형 식사가 좋습니다. 수분 섭취를 충분히 챙기고, 속도를 늦추는 따뜻한 음식이나 균형 잡힌 단백질 식사를 붙이면 기복이 줄어듭니다.`,
+      },
+      {
+        id: "sound",
+        title: "소리와 분위기",
+        body: `${secondary} 기운을 안정시키는 데는 시끄러운 자극보다 맑고 정돈된 소리가 잘 맞습니다. 잔잔한 피아노, 물 흐르는 소리, 혹은 베이스가 낮게 깔리는 음악이 판단을 정리하는 데 도움을 줍니다.`,
+      },
+      {
+        id: "health",
+        title: "신체 감각과 건강 관리",
+        body: `지금 사주는 몰입한 뒤 과열되기 쉬운 흐름이 있어 회복 속도를 의식해야 합니다. 수면, 호흡, 체온 관리 같은 기본기가 운의 체감 차이를 크게 만듭니다. 특히 무리한 일정 다음에는 바로 식히는 시간을 넣는 편이 좋습니다.`,
+      },
+      {
+        id: "habit",
+        title: "생활 습관과 태도",
+        body: `운이 열리는 방식은 대개 거창하지 않습니다. 책상 위, 메신저, 일정표처럼 매일 보는 환경을 먼저 정리하면 막혀 있던 흐름이 빨리 풀립니다. 지금은 많이 벌이기보다, 불필요한 것을 덜어내는 쪽이 맞습니다.`,
+      },
+      {
+        id: "relationship",
+        title: "인맥과 관계 흐름",
+        body: `${top.label} 점수가 높게 잡히는 만큼 사람을 통해 기회가 들어올 가능성이 있습니다. 감정적으로 들뜨는 사람보다 차분하고 논리적인 사람, 또는 반응은 느려도 약속을 지키는 사람과 가까이 있을수록 흐름이 안정됩니다.`,
+      },
+      {
+        id: "lucky-number",
+        title: "오늘의 행운 숫자",
+        body: `${luckyNumbers}. 재미로 가볍게 붙여두되, 중요한 선택은 숫자보다 타이밍과 기준을 우선하는 편이 좋습니다.`,
+      },
+    ],
+  };
+}
+
 function periodCopy(period: FortunePeriod) {
   if (period === "daily") {
     return {
@@ -298,13 +350,15 @@ function buildFallbackFortune(input: FortuneFormInput, period: FortunePeriod): F
   const top = [...highlights].sort((a, b) => b.score - a.score);
   const oneLineVariants = buildOneLineVariants(bestCategory(chart));
   const picks = buildPicks(input, period, chart, oneLineVariants);
+  const luckyNumbers = picks.find((pick) => pick.id === "lucky-numbers")?.value ?? "7, 14, 22, 31";
+  const deepReading = buildDeepSections(input, chart, luckyNumbers);
   const copy = periodCopy(period);
   const periodLabel = KOREAN_PERIOD_LABEL[period];
 
   return {
     period,
     headline: `${input.name || "사용자"}님의 ${periodLabel} 운세 예보`,
-    summary: `${copy.headline}. ${top[0].label}과 ${top[1].label}이 상대적으로 강하게 나타나며, 중요한 선택은 흐름이 열리는 구간에 맞출수록 결과가 선명해집니다.`,
+    summary: `${copy.headline}. ${top[0].label}과 ${top[1].label}이 상대적으로 강하게 나타나며, 중요한 선택은 흐름이 열리는 구간에 맞출수록 결과가 선명해집니다. 마지막에는 오늘의 행운 숫자까지 함께 확인해 보세요.`,
     actionPoint: `${copy.actionLead} 특히 ${top[0].label} 점수가 높게 형성되는 시점에 제안, 발표, 대화를 배치하는 편이 좋습니다.`,
     caution: copy.caution,
     luckyWindow: copy.luckyWindow,
@@ -318,6 +372,8 @@ function buildFallbackFortune(input: FortuneFormInput, period: FortunePeriod): F
     highlights,
     picks,
     oneLineVariants,
+    deepReadingIntro: deepReading.intro,
+    deepSections: deepReading.sections,
     chart,
     source: "fallback",
   };
@@ -340,6 +396,8 @@ function buildPrompt(input: FortuneFormInput, period: FortunePeriod) {
     "문장은 예언자처럼 단정하지 말고, 행동을 부추기는 세련된 카피처럼 작성한다.",
     "picks 항목은 특히 구체적이고 감각적이어야 하며, '오늘의 술', '오늘의 커피', '오늘의 액션'은 바로 떠오르는 장면이 있어야 한다.",
     "oneLineVariants에는 sharp, seductive, cool 세 가지 톤을 모두 넣어야 하고, 서로 같은 말을 반복하면 안 된다.",
+    "deepReadingIntro와 deepSections는 예시처럼 사주 원국 해설에서 출발해 음식, 소리, 건강 관리, 생활 습관, 인간관계 조언까지 이어지는 서술형 문체여야 한다.",
+    "deepSections의 마지막 섹션은 반드시 '오늘의 행운 숫자'여야 하며, 숫자를 자연스럽게 제시해야 한다.",
     "행운 숫자는 로또 당첨 보장처럼 쓰지 말고, 재미 요소라는 뉘앙스를 유지한다.",
     "summary, actionPoint, caution도 평범한 상담문처럼 늘어놓지 말고 첫 문장부터 긴장감 있게 쓴다.",
     `사용자 이름: ${input.name || "사용자"}`,
@@ -434,6 +492,26 @@ function fortuneSchema(pointCount: number) {
           required: ["tone", "text"],
         },
       },
+      deepReadingIntro: {
+        type: "string",
+        description: "사주 기운을 해설하는 서두. 예시처럼 원국의 흐름과 보완 포인트를 자연스럽게 설명한다.",
+      },
+      deepSections: {
+        type: "array",
+        minItems: 6,
+        items: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            title: { type: "string" },
+            body: {
+              type: "string",
+              description: "음식, 소리, 건강, 습관, 관계, 오늘의 행운 숫자 같은 생활 보완형 설명.",
+            },
+          },
+          required: ["id", "title", "body"],
+        },
+      },
       chart: {
         type: "array",
         minItems: pointCount,
@@ -463,6 +541,8 @@ function fortuneSchema(pointCount: number) {
       "highlights",
       "picks",
       "oneLineVariants",
+      "deepReadingIntro",
+      "deepSections",
       "chart",
     ],
   };
@@ -485,6 +565,8 @@ function normalizePayload(payload: FortunePayload, period: FortunePeriod) {
     checklist: payload.checklist.slice(0, 5),
     oneLineVariants: payload.oneLineVariants?.slice(0, 3) ?? buildOneLineVariants(bestCategory(chart)),
     picks: payload.picks?.slice(0, 5) ?? buildPicks(defaultInputForNormalization, period, chart),
+    deepReadingIntro: payload.deepReadingIntro ?? "",
+    deepSections: payload.deepSections?.slice(0, 6) ?? [],
     chart,
   };
 }
@@ -569,6 +651,14 @@ async function requestGeminiFortune(
 
   if (!hasOneLinePick) {
     normalized.picks = buildPicks(input, period, normalized.chart, normalized.oneLineVariants);
+  }
+
+  if (!normalized.deepReadingIntro || !normalized.deepSections.length) {
+    const luckyNumbers =
+      normalized.picks.find((pick) => pick.id === "lucky-numbers")?.value ?? "7, 14, 22, 31";
+    const deepReading = buildDeepSections(input, normalized.chart, luckyNumbers);
+    normalized.deepReadingIntro = deepReading.intro;
+    normalized.deepSections = deepReading.sections;
   }
 
   return normalized;

@@ -476,6 +476,24 @@ export function LuckCastDashboard() {
                   </ul>
                 </aside>
               </section>
+
+              <section className="glass-panel rounded-[32px] border border-white/60 p-6 sm:p-7">
+                <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Deep Reading</p>
+                <h3 className="mt-2 text-2xl font-bold text-slate-900">사주 기반 생활 해설</h3>
+                <p className="mt-5 text-base leading-8 text-slate-700">{fortune.deepReadingIntro}</p>
+
+                <div className="mt-6 grid gap-4 lg:grid-cols-2">
+                  {fortune.deepSections.map((section) => (
+                    <article
+                      key={section.id}
+                      className="rounded-[24px] border border-white/80 bg-white/70 p-5"
+                    >
+                      <h4 className="text-lg font-bold text-slate-900">{section.title}</h4>
+                      <p className="mt-3 text-sm leading-7 text-slate-700">{section.body}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
             </>
           ) : null}
 
