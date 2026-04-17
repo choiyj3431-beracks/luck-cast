@@ -214,6 +214,12 @@ function buildPicks(
     ["바닐라 라테", "사람을 만나는 자리에 부드러운 첫인상이 더 잘 먹힙니다."],
     ["에스프레소", "짧고 강한 결정을 내려야 할 때 추진력이 붙습니다."],
   ] as const;
+  const menuByMood = [
+    ["맑은 곰탕", "속을 무겁게 누르지 않고 컨디션을 안정시키는 선택입니다."],
+    ["연어 포케", "과열된 흐름을 식히면서 집중력을 길게 끌고 갑니다."],
+    ["들기름 막국수", "복잡한 기운을 가볍게 풀어내고 템포를 정리하는 데 잘 맞습니다."],
+    ["스테이크 샐러드", "에너지는 유지하되 판단은 흐리지 않게 가는 조합입니다."],
+  ] as const;
   const drinkByMood = [
     ["하이볼", "길게 늘어지는 자리보다 가볍고 선명한 템포가 어울립니다."],
     ["레드와인", "관계와 분위기를 천천히 끌어올리는 쪽이 유리합니다."],
@@ -227,6 +233,7 @@ function buildPicks(
     health: "카페인과 수면 시간 먼저 정리하기",
   } as const;
   const coffee = coffeeByMood[seed % coffeeByMood.length];
+  const menu = menuByMood[(seed + 2) % menuByMood.length];
   const drink = drinkByMood[(seed + 1) % drinkByMood.length];
   const oneLines = variants && variants.length ? variants : buildOneLineVariants(top);
   const selectedVariant = oneLines[seed % oneLines.length];
@@ -255,6 +262,12 @@ function buildPicks(
       label: period === "daily" ? "오늘의 커피" : "이번 흐름의 커피",
       value: coffee[0],
       description: coffee[1],
+    },
+    {
+      id: "menu",
+      label: period === "daily" ? "오늘의 추천 메뉴" : "이번 흐름의 추천 메뉴",
+      value: menu[0],
+      description: menu[1],
     },
     {
       id: "action",
